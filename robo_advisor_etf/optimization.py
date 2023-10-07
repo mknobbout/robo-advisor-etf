@@ -156,15 +156,14 @@ class ETFPortfolioOptimizer:
         for symbol, weight in zip(self._symbols, portfolio_weights):
             symbol_info = self._information.loc[symbol]
             result.append({
-                "Symbol": symbol,
-                "Full Name": symbol_info["longName"],
-                "Weight": weight,
-                "Category": symbol_info["category"],
-                "Industry": symbol_info["industry"],
-                "Expense Ratio": symbol_info["annualReportExpenseRatio"],
+                "symbol": symbol,
+                "longName": symbol_info["longName"],
+                "weight": weight,
+                "category": symbol_info["category"],
+                "annualReportExpenseRatio": symbol_info["annualReportExpenseRatio"],
             })
 
-        return pd.DataFrame(result).sort_values("Weight", ascending=False)
+        return pd.DataFrame(result).sort_values("weight", ascending=False)
 
     @classmethod
     def load(cls, path: str) -> "ETFPortfolioOptimizer":
