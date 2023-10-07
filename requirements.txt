@@ -1,0 +1,8 @@
+yfinance
+numpy
+pandas
+cvxpy
+scipy
+cvxopt
+dash
+dash_bootstrap_components
