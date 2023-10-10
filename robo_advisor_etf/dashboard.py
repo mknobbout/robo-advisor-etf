@@ -19,8 +19,11 @@ data = pd.DataFrame({
 
 # Define the layout of the app
 app.layout = html.Div([
-    html.H1("Welcome to your personal Robo-Advisor!"),
     html.Div([
+        html.H1("Welcome to your personal Robo-Advisor!"),
+        html.Img(src="assets/robo-advisor.png")
+    ], className="banner"),
+    html.H2([
         html.Label("To provide a customized experience, we need to know you better:")
     ]),
     html.Div([
@@ -145,3 +148,6 @@ def update_table(n_clicks, target_risk):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+## Images taken from
+# - <a href="https://www.flaticon.com/free-icons/invest" title="invest icons">Invest icons created by ultimatearm - Flaticon</a>
