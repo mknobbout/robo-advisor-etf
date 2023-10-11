@@ -34,7 +34,7 @@ class ETFPortfolioOptimizer:
         # Returns is the percentage change of the adjusted close
         # We use adjusted close since this INCLUDES dividends. Hence we
         # do not need to capture that in our optimization objective.
-        self._returns = data.ffill().bfill().pct_change().dropna()["Adj Close"]
+        self._returns = data.pct_change().dropna()["Adj Close"]
 
         # Define columns to retrieve
         data_to_retrieve = [
@@ -103,8 +103,9 @@ class ETFPortfolioOptimizer:
         """
         Uses a mean/variance optimization framework to find the optimal portfolio.
         :param portfolio_risk_percentage: Percentage of the portfolio with the highest risk to aim for.
-        :param leq_constraints:
-        :param geq_constraints:
+        :param max_percentage_per_etf: Maximum percentage allocated to 1 ETF
+        :param leq_constraints: LEQ constraints
+        :param geq_constraints: GEQ constraints
         :return: List of weights
         """
         # Ensure that the percentage is between 0 and 1
