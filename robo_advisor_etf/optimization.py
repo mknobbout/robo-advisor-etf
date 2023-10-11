@@ -7,6 +7,14 @@ import numpy as np
 import scipy.stats as st
 from typing import Optional, Dict
 from bs4 import BeautifulSoup
+from enum import Enum
+
+
+class TradingPeriod(Enum):
+    DAILY = 1
+    WEEKLY = 5
+    MONTHLY = 21
+    YEARLY = 252
 
 
 class ETFPortfolioOptimizer:
@@ -127,6 +135,9 @@ class ETFPortfolioOptimizer:
         # We are now going determine the maximum portfolio std based on the risk percentage
         max_portfolio_std = portfolio_risk_percentage * highest_return_std
 
+        # Assert that our covariance matrix is PSD
+        cov_psd = cp.psd_wrap(self._cov_matrix)
+
         def expected_portfolio_return(weights):
             """
             Main objective function. Note that since we take the adjusted closing price, we simply optimize
@@ -138,7 +149,7 @@ class ETFPortfolioOptimizer:
             return cp.sum(self._mean_returns @ weights)
 
         def portfolio_std(weights):
-            return cp.sqrt(cp.quad_form(weights, self._cov_matrix))
+            return cp.sqrt(cp.quad_form(weights, cov_psd))
 
         # Define the optimization problem
         weights = cp.Variable(len(self._etf_data))
@@ -170,33 +181,25 @@ class ETFPortfolioOptimizer:
         return weights.value
 
     def calculate_var(
-        self, portfolio_weights: np.array, period: str = "daily", alpha: float = 0.01
+        self,
+        portfolio_weights: np.array,
+        period: TradingPeriod = TradingPeriod.DAILY,
+        alpha: float = 0.01,
     ):
         """
         Method to calculate the Value of Risk of a given portfolio. Portfolio is specified as a np.array of weights.
         It uses the variance/covariance method and assumes the returns are normally distributed.
         :param portfolio_weights: The weights assigned to each Ticker.
-        :param period: Period to compute the VaR over (daily/weekly/monthly/yearly)
+        :param period: Period to compute the VaR over
         :param alpha: The percentile we are interested in.
         :return: The computed Value at Risk using the variance/covariance method.
         """
-        period_to_trading_days = {"daily": 1, "weekly": 5, "monthly": 21, "yearly": 252}
-        if period not in period_to_trading_days:
-            return ValueError(
-                'Period must either be "daily", "weekly", "monthly" or "yearly"'
-            )
-
         # Compute expected return
-        portfolio_return = period_to_trading_days[period] * np.sum(
-            self._mean_returns * portfolio_weights
-        )
+        portfolio_return = period.value * np.sum(self._mean_returns * portfolio_weights)
 
         # Compute standard deviation.
         portfolio_stddev = np.sqrt(
-            period_to_trading_days[period]
-            * portfolio_weights.T
-            @ self._cov_matrix
-            @ portfolio_weights
+            period.value * portfolio_weights.T @ self._cov_matrix @ portfolio_weights
         )
 
         # Compute z score using the standard Guassian distribution
@@ -205,6 +208,45 @@ class ETFPortfolioOptimizer:
         # Calculate the var
         var = portfolio_return + z_score * portfolio_stddev
         return var
+
+    def get_statistics(self, portfolio_weights) -> pd.DataFrame:
+        """
+        Method for computing some basic portfolio statistics based on the weights.
+        :param portfolio_weights: The weights
+        :return: Several statistics (beta, VaRs and returns)
+        """
+        return pd.DataFrame(
+            [
+                {
+                    "description": "3-year Beta",
+                    "value": np.sum(
+                        self._etf_data["beta3Year"].to_numpy() @ portfolio_weights
+                    ),
+                },
+                {
+                    "description": "Monthly value at risk (1%)",
+                    "value": self.calculate_var(
+                        portfolio_weights, period=TradingPeriod.MONTHLY, alpha=0.01
+                    ),
+                },
+                {
+                    "description": "Yearly value at risk (2%)",
+                    "value": self.calculate_var(
+                        portfolio_weights, period=TradingPeriod.YEARLY, alpha=0.01
+                    ),
+                },
+                {
+                    "description": "Monthly expected return",
+                    "value": TradingPeriod.MONTHLY.value
+                    * np.sum(self._mean_returns @ portfolio_weights),
+                },
+                {
+                    "description": "Yearly expected return",
+                    "value": TradingPeriod.YEARLY.value
+                    * np.sum(self._mean_returns @ portfolio_weights),
+                },
+            ]
+        )
 
     def create_portfolio_overview(self, portfolio_weights) -> pd.DataFrame:
         """
