@@ -4,7 +4,7 @@ from dash.dependencies import Input, Output
 from optimization import ETFPortfolioOptimizer
 from datetime import date
 from dash.exceptions import PreventUpdate
-
+import plotly.graph_objs as go
 import dash_bootstrap_components as dbc
 import pandas as pd
 
@@ -138,7 +138,8 @@ app.layout = html.Div(
         dcc.Loading(
             id="loading",
             children=[
-                html.Center(html.Div(id="table-stats", style={"width": "50%"})),
+                html.Center(html.Div(id="table-graph", style={"width": "100%"})),
+                html.Center(html.Div(id="table-stats", style={"width": "60%"})),
                 html.Center(html.Div(id="table-portfolio", style={"width": "80%"})),
             ],
             type="default",
@@ -151,6 +152,7 @@ app.layout = html.Div(
 # Callback to update the table
 @app.callback(
     Output("table-portfolio", "children"),
+    Output("table-graph", "children"),
     Output("table-stats", "children"),
     Output("main_ui", "children"),
     Input("show-table-button", "n_clicks"),
@@ -203,7 +205,11 @@ def update_table(n_clicks, target_risk, sustainability):
             {"name": "Value", "id": "value"},
         ],
     )
-    return portfolio_table, portfolio_stats_table, "Your portfolio is ready!"
+    graph = html.Div([
+        dcc.Graph(figure=portfolio_model.plot_historic_performance(portfolio_weights), style={'display': 'inline-block', 'height': '400px'}),
+        dcc.Graph(figure=go.Figure(go.Pie(labels=portfolio_df.longName, values=portfolio_df.weight)), style={'display': 'inline-block', 'height': '400px'})
+    ])
+    return portfolio_table, graph, portfolio_stats_table, "Your portfolio is ready!"
 
 
 if __name__ == "__main__":
