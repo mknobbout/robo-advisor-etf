@@ -5,6 +5,7 @@ import yfinance as yf
 import pickle
 import numpy as np
 import scipy.stats as st
+import plotly.graph_objs as go
 from typing import Optional, Dict
 from bs4 import BeautifulSoup
 from enum import Enum
@@ -209,7 +210,7 @@ class ETFPortfolioOptimizer:
         var = portfolio_return + z_score * portfolio_stddev
         return var
 
-    def get_statistics(self, portfolio_weights) -> pd.DataFrame:
+    def get_statistics(self, portfolio_weights: np.array) -> pd.DataFrame:
         """
         Method for computing some basic portfolio statistics based on the weights.
         :param portfolio_weights: The weights
@@ -248,7 +249,7 @@ class ETFPortfolioOptimizer:
             ]
         )
 
-    def create_portfolio_overview(self, portfolio_weights) -> pd.DataFrame:
+    def create_portfolio_overview(self, portfolio_weights: np.array) -> pd.DataFrame:
         """
         Creates a pandas DataFrame that can be outputted/visualized, with an overview of the portfolio
         :param portfolio_weights:
@@ -260,6 +261,16 @@ class ETFPortfolioOptimizer:
 
         return pd.DataFrame(result).sort_values("weight", ascending=False)
 
+    def plot_historic_performance(self, portfolio_weights: np.array) -> go.Figure:
+        return go.Figure([
+            go.Scatter(
+                name='Returns',
+                x=self._returns.index,
+                y=np.cumsum(self._returns @ portfolio_weights),
+                mode='lines',
+            )
+        ])
+
     @classmethod
     def load(cls, path: str) -> "ETFPortfolioOptimizer":
         with open(path, "rb") as f:
@@ -269,3 +280,5 @@ class ETFPortfolioOptimizer:
     def save(self, path: str) -> None:
         with open(path, "wb") as f:
             pickle.dump(self, f)
+
+
