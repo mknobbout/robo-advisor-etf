@@ -231,7 +231,7 @@ class ETFPortfolioOptimizer:
                     ),
                 },
                 {
-                    "description": "Yearly value at risk (2%)",
+                    "description": "Yearly value at risk (1%)",
                     "value": self.calculate_var(
                         portfolio_weights, period=TradingPeriod.YEARLY, alpha=0.01
                     ),
